@@ -21,3 +21,8 @@ session_maker = async_sessionmaker[AsyncSession](
     autoflush=False,
     expire_on_commit=False
 )
+
+
+async def get_session():
+    async with session_maker() as session:
+        yield session
