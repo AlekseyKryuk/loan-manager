@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Annotated
 
 from pydantic import (
     AmqpDsn,
@@ -30,7 +31,7 @@ class AuthSettings(BaseModel):
 
 
 class DatabaseSettings(BaseModel):
-    url: PostgresDsn
+    url: Annotated[str, PostgresDsn]
     echo: bool = False
     echo_pool: bool = False
     max_overflow: int = 10
@@ -46,11 +47,11 @@ class DatabaseSettings(BaseModel):
 
 
 class CacheSettings(BaseModel):
-    url: RedisDsn
+    url: Annotated[str, RedisDsn]
 
 
 class AmqpSettings(BaseModel):
-    url: AmqpDsn
+    url: Annotated[str, AmqpDsn]
 
 
 class Settings(BaseSettings):
@@ -64,7 +65,7 @@ class Settings(BaseSettings):
 
     logging: LoggingSettings = LoggingSettings()
     auth: AuthSettings
-    # db: DatabaseSettings
+    db: DatabaseSettings
     # cache: CacheSettings
     # amqp: AmqpSettings
 

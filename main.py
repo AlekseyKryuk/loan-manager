@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.config import settings
+from src.database.connection import engine
 from src.routers import root_router
 
 
@@ -17,6 +18,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     yield
+    await engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)
