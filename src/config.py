@@ -19,7 +19,7 @@ class LoggingLevel(Enum):
 
 class LoggingSettings(BaseModel):
     level: int = LoggingLevel.WARNING
-    format: str = "%(asctime)s %(name)s %(levelname)s: %(message)s",
+    format: str = "%(asctime)s %(name)s %(levelname)s: %(message)s"
     date_format: str = "%Y-%m-%d %H:%M:%S"
 
 
