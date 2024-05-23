@@ -13,13 +13,13 @@ class SqlAlchemyRepository[Model: Base](AbstractRepository):
     def __init__(self, session: AsyncSession):
         self.session: AsyncSession = session
 
-    async def create(self, **kwargs: dict[str, ...]) -> Model:
+    async def create(self, **kwargs) -> Model:
         instance: Model = self.model(**kwargs)
         self.session.add(instance)
         await self.session.flush()
         return instance
 
-    async def get(self, **kwargs: dict[str, ...]) -> Model | None:
+    async def get(self, **kwargs) -> Model | None:
         entity: sqlalchemy.ScalarResult = await self.session.scalars(
             sqlalchemy
             .select(self.model)
@@ -27,7 +27,7 @@ class SqlAlchemyRepository[Model: Base](AbstractRepository):
         )
         return entity.one_or_none()
 
-    async def update(self, data: Mapping[str, ...], **kwargs: dict[str, ...]) -> Model | None:
+    async def update(self, data: Mapping[str, ...], **kwargs) -> Model | None:
         stmt = (
             sqlalchemy
             .update(self.model)
@@ -38,7 +38,7 @@ class SqlAlchemyRepository[Model: Base](AbstractRepository):
         entity: sqlalchemy.ScalarResult = await self.session.scalars(stmt)
         return entity.one_or_none()
 
-    async def delete(self, **kwargs: dict[str, ...]) -> Model | None:
+    async def delete(self, **kwargs) -> Model | None:
         stmt = (
             sqlalchemy
             .delete(self.model)

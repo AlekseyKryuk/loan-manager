@@ -4,17 +4,17 @@ from typing import Mapping
 
 class AbstractRepository(ABC):
     @abstractmethod
-    async def create(self, **kwargs: dict[str, ...]):
+    async def create(self, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    async def get(self, **kwargs: dict[str, ...]):
+    async def get(self, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, data: Mapping[str, ...], **kwargs: dict[str, ...]):
+    async def update(self, data: Mapping[str, ...], **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, **kwargs: dict[str, ...]):
+    async def delete(self, **kwargs):
         raise NotImplementedError
