@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def create_access_token(
         user: str,
-        expires_delta: timedelta = timedelta(minutes=settings.auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta: timedelta = timedelta(minutes=settings.auth.access_token_expire_minutes)
 ) -> str:
     expire: datetime = datetime.now(UTC) + expires_delta
     payload = {
@@ -21,8 +21,8 @@ def create_access_token(
     }
     token: str = jwt.encode(
         payload,
-        settings.auth.SECRET_KEY,
-        algorithm=settings.auth.ALGORITHM
+        settings.auth.secret_key,
+        algorithm=settings.auth.algorithm
     )
     return token
 
@@ -36,8 +36,8 @@ async def verify_access_token(token: str) -> str:
     try:
         payload = jwt.decode(
             token,
-            settings.auth.SECRET_KEY,
-            settings.auth.ALGORITHM
+            settings.auth.secret_key,
+            settings.auth.algorithm
         )
 
         expired_at: int = payload.get("exp")
