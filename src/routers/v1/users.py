@@ -37,4 +37,4 @@ async def login(
     user_service: UserService = UserService()
     user: User = await user_service.login(session=session, user_form=user_form)
     access_token: str = create_access_token(user.email)
-    return Token(token=access_token)
+    return Token(access_token=access_token)
