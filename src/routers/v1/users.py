@@ -23,7 +23,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def create_user(
         user_data: UserCreate,
         session: Annotated[AsyncSession, Depends(get_session)],
-):
+) -> User:
     user_service: UserService = UserService()
     user: User = await user_service.create_user(session=session, user_data=user_data)
     return user
@@ -33,7 +33,7 @@ async def create_user(
 async def login(
         user_form: Annotated[OAuth2PasswordRequestForm, Depends()],
         session: Annotated[AsyncSession, Depends(get_session)],
-):
+) -> Token:
     user_service: UserService = UserService()
     user: User = await user_service.login(session=session, user_form=user_form)
     access_token: str = create_access_token(user.email)
