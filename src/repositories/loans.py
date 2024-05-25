@@ -19,6 +19,16 @@ class LoanRepository(SqlAlchemyRepository[Loan]):
         return loans.all()
 
     @override
+    async def get(self, **kwargs) -> Loan | None:
+        loan: ScalarResult = await self.session.scalars(
+            select(Loan)
+            .select_from(Loan)
+            .join(User, Loan.user_id == User.id)
+            .where(User.email == kwargs.get('email'))
+        )
+        return loan.one_or_none()
+
+    @override
     async def delete(self, **kwargs) -> Loan | None:
         loan: ScalarResult = await self.session.scalars(
             delete(Loan)

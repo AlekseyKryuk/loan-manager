@@ -50,6 +50,17 @@ class LoanService:
         return [LoanRead(**loan.__dict__) for loan in loans]
 
     @staticmethod
+    async def get_loan(session: AsyncSession, loan_id: UUID, email: str) -> Loan:
+        loan_repo: LoanRepository = LoanRepository(session=session)
+        loan: Loan | None = await loan_repo.get(id=loan_id, email=email)
+        if not loan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The loan with supplied ID doesn't exist"
+            )
+        return loan
+
+    @staticmethod
     async def delete_loan(session: AsyncSession, loan_id: UUID, email: str) -> Loan:
         loan_repo: LoanRepository = LoanRepository(session=session)
         loan: Loan | None = await loan_repo.delete(id=loan_id, email=email)

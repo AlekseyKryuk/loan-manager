@@ -37,6 +37,17 @@ async def get_all_loans(
     return loans[offset:offset+limit]
 
 
+@router.get("/{loan_id}", response_model=LoanRead)
+async def get_loan(
+        loan_id: Annotated[UUID, Path()],
+        email: Annotated[str, Depends(authenticate)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+) -> LoanRead:
+    loan_service: LoanService = LoanService()
+    loan: Loan = await loan_service.get_loan(session=session, loan_id=loan_id, email=email)
+    return LoanRead(**loan.__dict__)
+
+
 @router.delete("/{loan_id}", response_model=dict[str, str])
 async def delete_loan(
         loan_id: Annotated[UUID, Path()],
