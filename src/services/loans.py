@@ -1,6 +1,7 @@
 import logging
 from datetime import date
 from typing import Sequence
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,3 +48,15 @@ class LoanService:
         loan_repo: LoanRepository = LoanRepository(session=session)
         loans: Sequence[Loan] = await loan_repo.get_all(email=email)
         return [LoanRead(**loan.__dict__) for loan in loans]
+
+    @staticmethod
+    async def delete_loan(session: AsyncSession, loan_id: UUID, email: str) -> Loan:
+        loan_repo: LoanRepository = LoanRepository(session=session)
+        loan: Loan | None = await loan_repo.delete(id=loan_id, email=email)
+        if not loan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The loan with supplied ID doesn't exist"
+            )
+        await session.commit()
+        return loan

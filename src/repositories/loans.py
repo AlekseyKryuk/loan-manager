@@ -1,6 +1,6 @@
-from typing import Sequence
+from typing import Sequence, override
 
-from sqlalchemy import select, ScalarResult
+from sqlalchemy import select, delete, and_, ScalarResult
 from src.database.models.loans import Loan
 from .sqlalchemy_repository import SqlAlchemyRepository
 from ..database.models import User
@@ -17,3 +17,21 @@ class LoanRepository(SqlAlchemyRepository[Loan]):
             .where(User.email == kwargs.get('email'))
         )
         return loans.all()
+
+    @override
+    async def delete(self, **kwargs) -> Loan | None:
+        loan: ScalarResult = await self.session.scalars(
+            delete(Loan)
+            .where(
+                and_(
+                    Loan.id == kwargs.get('id'),
+                    Loan.user_id == (
+                        select(User.id)
+                        .select_from(User)
+                        .where(User.email == kwargs.get('email'))
+                    )
+                )
+            )
+            .returning(Loan)
+        )
+        return loan.one_or_none()

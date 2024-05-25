@@ -35,3 +35,14 @@ async def get_all_loans(
     loan_service: LoanService = LoanService()
     loans: list[LoanRead] = await loan_service.get_all_loans(session=session, email=email)
     return loans[offset:offset+limit]
+
+
+@router.delete("/{loan_id}", response_model=dict[str, str])
+async def delete_loan(
+        loan_id: Annotated[UUID, Path()],
+        session: Annotated[AsyncSession, Depends(get_session)],
+        email: Annotated[str, Depends(authenticate)]
+) -> dict[str, str]:
+    loan_service: LoanService = LoanService()
+    loan: Loan = await loan_service.delete_loan(session=session, loan_id=loan_id, email=email)
+    return {"message": f"The loan with name {loan.name} was deleted successfully"}
