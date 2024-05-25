@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from typing import Sequence
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,18 +10,17 @@ from src.database.models import User
 from src.database.models.loans import Loan
 from src.repositories.loans import LoanRepository
 from src.repositories.users import UserRepository
-from src.schemas.loans import LoanCreate
-
+from src.schemas.loans import LoanCreate, LoanRead
 
 logger = logging.getLogger(__name__)
 
 
 class LoanService:
     @staticmethod
-    async def create_loan(session: AsyncSession, username: str, loan_data: LoanCreate) -> Loan:
+    async def create_loan(session: AsyncSession, email: str, loan_data: LoanCreate) -> Loan:
         loan_repo: LoanRepository = LoanRepository(session=session)
         user_repo: UserRepository = UserRepository(session=session)
-        user: User | None = await user_repo.get(email=username)
+        user: User | None = await user_repo.get(email=email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,3 +41,9 @@ class LoanService:
             )
         await session.commit()
         return loan
+
+    @staticmethod
+    async def get_all_loans(session: AsyncSession, email: str) -> list[LoanRead]:
+        loan_repo: LoanRepository = LoanRepository(session=session)
+        loans: Sequence[Loan] = await loan_repo.get_all(email=email)
+        return [LoanRead(**loan.__dict__) for loan in loans]
