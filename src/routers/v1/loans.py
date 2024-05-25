@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..dependencies import get_session, authenticate
 from src.config import settings
 from src.database.models.loans import Loan
-from src.schemas.loans import LoanCreate, LoanRead
+from src.schemas.loans import LoanCreate, LoanRead, LoanUpdate
 from src.services.loans import LoanService
 
 
@@ -52,8 +52,26 @@ async def get_loan(
 async def delete_loan(
         loan_id: Annotated[UUID, Path()],
         session: Annotated[AsyncSession, Depends(get_session)],
-        email: Annotated[str, Depends(authenticate)]
+        email: Annotated[str, Depends(authenticate)],
 ) -> dict[str, str]:
     loan_service: LoanService = LoanService()
     loan: Loan = await loan_service.delete_loan(session=session, loan_id=loan_id, email=email)
     return {"message": f"The loan with name {loan.name} was deleted successfully"}
+
+
+@router.put("/{loan_id}", response_model=LoanRead)
+async def update_loan(
+        loan_id: Annotated[UUID, Path()],
+        loan_data: Annotated[LoanUpdate, Body()],
+        email: Annotated[str, Depends(authenticate)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+) -> LoanRead:
+    loan_service: LoanService = LoanService()
+    loan: Loan = await loan_service.update_loan(
+        session=session,
+        loan_id=loan_id,
+        email=email,
+        data=loan_data,
+    )
+    return LoanRead(**loan.__dict__)
+

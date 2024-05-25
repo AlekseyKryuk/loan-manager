@@ -33,8 +33,8 @@ class LoanCreate(LoanBase):
     )
 
 
-class LoanUpdate(LoanCreate):
-    pass
+class LoanUpdate(LoanBase):
+    model_config = deepcopy(LoanCreate.model_config)
 
 
 class LoanRead(LoanBase):

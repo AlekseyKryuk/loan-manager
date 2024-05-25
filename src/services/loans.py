@@ -7,11 +7,12 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from src.database.models import User
+from src.database.models import User, LoanPayment
 from src.database.models.loans import Loan
 from src.repositories.loans import LoanRepository
+from src.repositories.loan_payments import LoanPaymentRepository
 from src.repositories.users import UserRepository
-from src.schemas.loans import LoanCreate, LoanRead
+from src.schemas.loans import LoanCreate, LoanRead, LoanUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,39 @@ class LoanService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="The loan with supplied ID doesn't exist"
+            )
+        await session.commit()
+        return loan
+
+    @staticmethod
+    async def update_loan(
+            session: AsyncSession,
+            loan_id: UUID,
+            email: str,
+            data: LoanUpdate,
+    ) -> Loan:
+        loan_data_dict: dict[str, ...] = data.model_dump(exclude_unset=True)
+        loan_repo: LoanRepository = LoanRepository(session=session)
+        loan_payment_repo: LoanPaymentRepository = LoanPaymentRepository(session=session)
+        payments: Sequence[LoanPayment] = await loan_payment_repo.get_many(loan_id=loan_id, email=email)
+        if payments:
+            match (data.start_date, data.loan_amount, data.interest_rate_percent, data.loan_term):
+                case (None, None, None, None):
+                    pass
+                case _:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="Parameters: start_date, loan_amount, interest_rate_percent, loan_term cannot be "
+                               "updated for the loan that already has a schedule, because the schedule "
+                               "depends on these parameters."
+                    )
+        try:
+            loan: Loan | None = await loan_repo.update(data=loan_data_dict, id=loan_id, email=email)
+        except IntegrityError as e:
+            logger.exception(e.args)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f'The loan with name "{data.name}" already exists',
             )
         await session.commit()
         return loan
