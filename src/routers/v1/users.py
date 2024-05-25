@@ -23,10 +23,10 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def create_user(
         user_data: UserCreate,
         session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
+) -> UserRead:
     user_service: UserService = UserService()
     user: User = await user_service.create_user(session=session, user_data=user_data)
-    return user
+    return UserRead(**user.__dict__)
 
 
 @router.post("/login", response_model=Token)
