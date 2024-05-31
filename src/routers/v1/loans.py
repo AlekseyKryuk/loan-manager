@@ -21,8 +21,8 @@ async def create_loan(
         session: Annotated[AsyncSession, Depends(get_session)],
 ) -> LoanRead:
     loan_service: LoanService = LoanService()
-    new_loan: Loan = await loan_service.create_loan(session=session, email=email, loan_data=loan_data)
-    return LoanRead(**new_loan.__dict__)
+    new_loan: LoanRead = await loan_service.create_loan(session=session, email=email, loan_data=loan_data)
+    return new_loan
 
 
 @router.get("/", response_model=list[LoanRead])

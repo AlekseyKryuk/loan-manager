@@ -3,23 +3,28 @@ from datetime import date
 from typing import Sequence
 from uuid import UUID
 
+import redis
 from fastapi import HTTPException, status
+from orjson import orjson
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from src.cache.connection import redis
 from src.database.models import User, LoanPayment
 from src.database.models.loans import Loan
 from src.repositories.loans import LoanRepository
 from src.repositories.loan_payments import LoanPaymentRepository
 from src.repositories.users import UserRepository
 from src.schemas.loans import LoanCreate, LoanRead, LoanUpdate
+from src.utils.serialization import orjson_default
+
 
 logger = logging.getLogger(__name__)
 
 
 class LoanService:
     @staticmethod
-    async def create_loan(session: AsyncSession, email: str, loan_data: LoanCreate) -> Loan:
+    async def create_loan(session: AsyncSession, email: str, loan_data: LoanCreate) -> LoanRead:
         loan_repo: LoanRepository = LoanRepository(session=session)
         user_repo: UserRepository = UserRepository(session=session)
         user: User | None = await user_repo.get(email=email)
@@ -34,7 +39,7 @@ class LoanService:
         loan_dict: dict[str, ...] = loan_data.model_dump()
         loan_dict["user_id"] = user.id
         try:
-            loan: Loan = await loan_repo.create(**loan_dict)
+            loan_db: Loan = await loan_repo.create(**loan_dict)
         except IntegrityError as e:
             logger.exception(e.args)
             raise HTTPException(
@@ -42,6 +47,13 @@ class LoanService:
                 detail=f'The loan with name "{loan_data.name}" already exists'
             )
         await session.commit()
+
+        loan: LoanRead = LoanRead(**loan_db.__dict__)
+        json_loan = orjson.dumps(loan.model_dump(), default=orjson_default)
+        try:
+            await redis.set(f'user:{user.id}.loan:{loan.id}', json_loan)
+        except redis.exceptions.ConnectionError:
+            pass
         return loan
 
     @staticmethod
