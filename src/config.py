@@ -48,6 +48,7 @@ class DatabaseSettings(BaseModel):
 
 class CacheSettings(BaseModel):
     url: Annotated[str, RedisDsn]
+    max_connections: int = 10
 
 
 class AmqpSettings(BaseModel):
@@ -72,7 +73,7 @@ class Settings(BaseSettings):
     pagination: PaginationParams = PaginationParams()
     auth: AuthSettings
     db: DatabaseSettings
-    # cache: CacheSettings
+    cache: CacheSettings
     # amqp: AmqpSettings
 
 
