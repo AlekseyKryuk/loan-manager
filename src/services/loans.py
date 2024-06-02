@@ -84,9 +84,19 @@ class LoanService:
         return loans
 
     @staticmethod
-    async def get_loan(session: AsyncSession, loan_id: UUID, email: str) -> Loan:
+    async def get_loan(session: AsyncSession, loan_id: UUID, email: str) -> LoanRead:
         loan_repo: LoanRepository = LoanRepository(session=session)
-        loan: Loan | None = await loan_repo.get(id=loan_id, email=email)
+        loan: LoanRead | None = None
+        try:
+            cache_loan: bytes | None = await cache.get(f'user:{email}.loan:{loan_id}')
+            if cache_loan:
+                loan_dict: dict[str, ...] = orjson.loads(cache_loan)
+                loan = LoanRead(**loan_dict)
+        except redis.exceptions.ConnectionError:
+            pass
+        if not loan:
+            loan_db: Loan | None = await loan_repo.get(id=loan_id, email=email)
+            loan = LoanRead(**loan_db.__dict__)
         if not loan:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
