@@ -50,9 +50,10 @@ class LoanService:
         await session.commit()
 
         loan: LoanRead = LoanRead(**loan_db.__dict__)
-        json_loan = orjson.dumps(loan.model_dump(), default=orjson_default)
+        json_loan: bytes = orjson.dumps(loan.model_dump(), default=orjson_default)
         try:
             await cache.set(f'user:{email}.loan:{loan.id}', json_loan, ex=settings.cache.ttl)
+            await cache.delete(f'user:{email}.loans')
         except redis.exceptions.ConnectionError:
             pass
         return loan
@@ -60,8 +61,27 @@ class LoanService:
     @staticmethod
     async def get_all_loans(session: AsyncSession, email: str) -> list[LoanRead]:
         loan_repo: LoanRepository = LoanRepository(session=session)
-        loans: Sequence[Loan] = await loan_repo.get_all(email=email)
-        return [LoanRead(**loan.__dict__) for loan in loans]
+        loans: list[LoanRead]
+
+        try:
+            loans_cache: bytes = await cache.get(f'user:{email}.loans')
+            if loans_cache:
+                raw_loans: list[dict[str, ...]] = orjson.loads(loans_cache)
+                loans = [LoanRead(**loan) for loan in raw_loans]
+                return loans
+        except redis.exceptions.ConnectionError:
+            pass
+
+        db_loans: Sequence[Loan] = await loan_repo.get_all(email=email)
+        loans = [LoanRead(**loan.__dict__) for loan in db_loans]
+        data_loans: list[dict[str, ...]] = [loan.model_dump() for loan in loans]
+        json_loans: bytes = orjson.dumps(data_loans, default=orjson_default)
+
+        try:
+            await cache.set(f'user:{email}.loans', json_loans, ex=settings.cache.ttl)
+        except redis.exceptions.ConnectionError:
+            pass
+        return loans
 
     @staticmethod
     async def get_loan(session: AsyncSession, loan_id: UUID, email: str) -> Loan:
