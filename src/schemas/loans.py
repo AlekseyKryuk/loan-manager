@@ -34,7 +34,12 @@ class LoanCreate(LoanBase):
 
 
 class LoanUpdate(LoanBase):
-    model_config = deepcopy(LoanCreate.model_config)
+    name: Annotated[str, Field(min_length=1)] = None
+    description: str | None = None
+    start_date: date | None = None
+    interest_rate_percent: Annotated[Decimal, Field(gt=0, max_digits=6, decimal_places=4)] = None
+    loan_amount: Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)] = None
+    loan_term: Annotated[int, Field(gt=1)] = None
 
 
 class LoanRead(LoanBase):
