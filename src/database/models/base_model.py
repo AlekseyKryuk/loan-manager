@@ -14,7 +14,10 @@ class Base(DeclarativeBase):
     )
 
     created_at: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
-    updated_at: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
+    updated_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())"),
+        onupdate=text("TIMEZONE('utc', now())"),
+    )
 
 
 uuid_pk = Annotated[UUID, mapped_column(primary_key=True, default=uuid4)]
