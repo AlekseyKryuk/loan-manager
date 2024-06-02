@@ -92,16 +92,19 @@ class LoanService:
             if cache_loan:
                 loan_dict: dict[str, ...] = orjson.loads(cache_loan)
                 loan = LoanRead(**loan_dict)
+            else:
+                loan_db: Loan | None = await loan_repo.get(id=loan_id, email=email)
+                loan = LoanRead(**loan_db.__dict__)
+                json_loan: bytes = orjson.dumps(loan.model_dump(), default=orjson_default)
+                await cache.set(f'user:{email}.loan:{loan.id}', json_loan, ex=settings.cache.ttl)
+
+            if not loan:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="The loan with supplied ID doesn't exist"
+                )
         except redis.exceptions.ConnectionError as e:
             logger.exception(e.args)
-        if not loan:
-            loan_db: Loan | None = await loan_repo.get(id=loan_id, email=email)
-            loan = LoanRead(**loan_db.__dict__)
-        if not loan:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="The loan with supplied ID doesn't exist"
-            )
         return loan
 
     @staticmethod
@@ -116,6 +119,7 @@ class LoanService:
         await session.commit()
         try:
             await cache.delete(f'user:{email}.loan:{loan_id}')
+            await cache.delete(f'user:{email}.loans')
         except redis.exceptions.ConnectionError as e:
             logger.exception(e.args)
         return loan
