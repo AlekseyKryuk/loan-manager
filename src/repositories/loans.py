@@ -25,7 +25,12 @@ class LoanRepository(SqlAlchemyRepository[Loan]):
             select(Loan)
             .select_from(Loan)
             .join(User, Loan.user_id == User.id)
-            .where(User.email == kwargs.get('email'))
+            .where(
+                and_(
+                    User.email == kwargs.get('email'),
+                    Loan.id == kwargs.get('id')
+                )
+            )
         )
         return loan.one_or_none()
 
