@@ -130,7 +130,7 @@ class LoanService:
             loan_id: UUID,
             email: str,
             data: LoanUpdate,
-    ) -> Loan:
+    ) -> LoanRead:
         loan_data_dict: dict[str, ...] = data.model_dump(exclude_unset=True)
         loan_repo: LoanRepository = LoanRepository(session=session)
         loan_payment_repo: LoanPaymentRepository = LoanPaymentRepository(session=session)
@@ -147,7 +147,7 @@ class LoanService:
                                "depends on these parameters."
                     )
         try:
-            loan: Loan | None = await loan_repo.update(data=loan_data_dict, id=loan_id, email=email)
+            loan_db: Loan | None = await loan_repo.update(data=loan_data_dict, id=loan_id, email=email)
         except IntegrityError as e:
             logger.exception(e.args)
             raise HTTPException(
@@ -155,4 +155,12 @@ class LoanService:
                 detail=f'The loan with name "{data.name}" already exists',
             )
         await session.commit()
+
+        loan: LoanRead = LoanRead(**loan_db.__dict__)
+        json_loan: bytes = orjson.dumps(loan.model_dump(), default=orjson_default)
+        try:
+            await cache.delete(f'user:{email}.loans')
+            await cache.set(f'user:{email}.loan:{loan_id}', json_loan, ex=settings.cache.ttl)
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
         return loan

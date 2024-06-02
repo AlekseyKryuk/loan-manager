@@ -67,11 +67,10 @@ async def update_loan(
         session: Annotated[AsyncSession, Depends(get_session)],
 ) -> LoanRead:
     loan_service: LoanService = LoanService()
-    loan: Loan = await loan_service.update_loan(
+    loan: LoanRead = await loan_service.update_loan(
         session=session,
         loan_id=loan_id,
         email=email,
         data=loan_data,
     )
-    return LoanRead(**loan.__dict__)
-
+    return loan
