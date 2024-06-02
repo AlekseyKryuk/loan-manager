@@ -9,6 +9,7 @@ from orjson import orjson
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from src.config import settings
 from src.cache.connection import cache
 from src.database.models import User, LoanPayment
 from src.database.models.loans import Loan
@@ -51,7 +52,7 @@ class LoanService:
         loan: LoanRead = LoanRead(**loan_db.__dict__)
         json_loan = orjson.dumps(loan.model_dump(), default=orjson_default)
         try:
-            await cache.set(f'user:{email}.loan:{loan.id}', json_loan)
+            await cache.set(f'user:{email}.loan:{loan.id}', json_loan, ex=settings.cache.ttl)
         except redis.exceptions.ConnectionError:
             pass
         return loan

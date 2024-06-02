@@ -49,6 +49,7 @@ class DatabaseSettings(BaseModel):
 class CacheSettings(BaseModel):
     url: Annotated[str, RedisDsn]
     max_connections: int = 10
+    ttl: int = 10 * 60
 
 
 class AmqpSettings(BaseModel):
