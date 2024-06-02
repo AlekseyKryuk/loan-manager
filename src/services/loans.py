@@ -54,8 +54,8 @@ class LoanService:
         try:
             await cache.set(f'user:{email}.loan:{loan.id}', json_loan, ex=settings.cache.ttl)
             await cache.delete(f'user:{email}.loans')
-        except redis.exceptions.ConnectionError:
-            pass
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
         return loan
 
     @staticmethod
@@ -69,8 +69,8 @@ class LoanService:
                 raw_loans: list[dict[str, ...]] = orjson.loads(loans_cache)
                 loans = [LoanRead(**loan) for loan in raw_loans]
                 return loans
-        except redis.exceptions.ConnectionError:
-            pass
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
 
         db_loans: Sequence[Loan] = await loan_repo.get_all(email=email)
         loans = [LoanRead(**loan.__dict__) for loan in db_loans]
@@ -79,8 +79,8 @@ class LoanService:
 
         try:
             await cache.set(f'user:{email}.loans', json_loans, ex=settings.cache.ttl)
-        except redis.exceptions.ConnectionError:
-            pass
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
         return loans
 
     @staticmethod
@@ -92,8 +92,8 @@ class LoanService:
             if cache_loan:
                 loan_dict: dict[str, ...] = orjson.loads(cache_loan)
                 loan = LoanRead(**loan_dict)
-        except redis.exceptions.ConnectionError:
-            pass
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
         if not loan:
             loan_db: Loan | None = await loan_repo.get(id=loan_id, email=email)
             loan = LoanRead(**loan_db.__dict__)
@@ -114,6 +114,10 @@ class LoanService:
                 detail="The loan with supplied ID doesn't exist"
             )
         await session.commit()
+        try:
+            await cache.delete(f'user:{email}.loan:{loan_id}')
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
         return loan
 
     @staticmethod
