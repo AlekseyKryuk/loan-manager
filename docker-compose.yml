@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    expose:
+      - 5432
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+  #    env_file:
+  #      - ENV/postgres.env
+
+  cache:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+    volumes:
+      - ./data/cache:/data
+
+  broker:
+    image: rabbitmq:management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    expose:
+      - 5672
+      - 15672
+    volumes:
+      - ./data/broker:/var/lib/rabbitmq
+
+  app:
+    build: .
+    image: loan-manager:latest
+    restart: always
+    entrypoint: ./run.sh
+    ports:
+      - "8080:8080"
+    expose:
+      - 8080
+    depends_on:
+      - db
+      - cache
