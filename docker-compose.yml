@@ -15,8 +15,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
-  #    env_file:
-  #      - ENV/postgres.env
 
   cache:
     image: redis
@@ -52,3 +50,6 @@ services:
     depends_on:
       - db
       - cache
+
+volumes:
+  data:
