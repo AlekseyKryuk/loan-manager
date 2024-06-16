@@ -8,7 +8,9 @@ from ..dependencies import get_session, authenticate
 from src.config import settings
 from src.database.models.loans import Loan
 from src.schemas.loans import LoanCreate, LoanRead, LoanUpdate
+from src.schemas.loan_payments import LoanPaymentCreate, LoanPaymentRead
 from src.services.loans import LoanService
+from src.services.loan_payments import LoanPaymentService
 
 
 router = APIRouter(prefix="/loans", tags=["loans"])
@@ -74,3 +76,22 @@ async def update_loan(
         data=loan_data,
     )
     return loan
+
+
+@router.post("/{loan_id}/payments", response_model=list[LoanPaymentRead])
+async def create_schedule(
+        loan_id: Annotated[UUID, Path()],
+        payments: list[LoanPaymentCreate],
+        email: Annotated[str, Depends(authenticate)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+        limit: Annotated[int, Query] = settings.pagination.limit,
+        offset: Annotated[int, Query] = settings.pagination.offset,
+) -> list[LoanPaymentRead]:
+    payment_service: LoanPaymentService = LoanPaymentService()
+    loan_schedule: list[LoanPaymentRead] = await payment_service.create_schedule(
+        session=session,
+        loan_id=loan_id,
+        email=email,
+        payments=payments,
+    )
+    return loan_schedule[offset:offset+limit]
