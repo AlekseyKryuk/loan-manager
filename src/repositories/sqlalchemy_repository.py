@@ -1,4 +1,4 @@
-from typing import Mapping
+from typing import Mapping, Sequence
 
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,3 +47,11 @@ class SqlAlchemyRepository[Model: Base](AbstractRepository):
         )
         entity: sqlalchemy.ScalarResult = await self.session.scalars(stmt)
         return entity.one_or_none()
+
+    async def create_many(
+            self,
+            entities: Sequence[Model]
+    ) -> Sequence[Model]:
+        self.session.add_all(entities)
+        await self.session.flush()
+        return entities
