@@ -30,7 +30,7 @@ class LoanPaymentRead(LoanPaymentBase):
     payment_number: int
     payment_date: date
     payment_amount: BillionDecimal
-    interest_amount: BillionDecimal
+    interest_amount: Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
     principal_amount: BillionDecimal
     incoming_balance: BillionDecimal
     remaining_balance: Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
