@@ -112,3 +112,19 @@ async def get_schedule(
         email=email,
     )
     return loan_schedule[offset:offset+limit]
+
+
+@router.delete("/{loan_id}/payments", response_model=dict[str, str])
+async def delete_schedule(
+        loan_id: Annotated[UUID, Path()],
+        email: Annotated[str, Depends(authenticate)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, str]:
+    payment_service: LoanPaymentService = LoanPaymentService()
+    await payment_service.delete_schedule(
+        session=session,
+        loan_id=loan_id,
+        email=email,
+    )
+    return {"message": "The schedule for the loan was deleted successfully"}
+

@@ -232,3 +232,29 @@ class LoanPaymentService:
         except redis.exceptions.ConnectionError as e:
             logger.exception(e.args)
         return loan_schedule
+
+    @staticmethod
+    async def delete_schedule(
+            loan_id: UUID,
+            email: str,
+            session: AsyncSession,
+    ) -> None:
+        try:
+            await cache.delete(f'user:{email}.loan:{loan_id}.payments')
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
+
+        loan_repo: LoanRepository = LoanRepository(session=session)
+        loan: Loan = await loan_repo.get(email=email, id=loan_id)
+        if not loan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The loan with supplied ID doesn't exist"
+            )
+        payment_repo: LoanPaymentRepository = LoanPaymentRepository(session=session)
+        deleted_payments: Sequence[LoanPayment] = await payment_repo.delete_many(loan_id=loan_id)
+        if not deleted_payments:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The schedule for the loan with supplied ID does not exist"
+            )
