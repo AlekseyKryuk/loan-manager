@@ -190,3 +190,45 @@ class LoanPaymentService:
         except redis.exceptions.ConnectionError as e:
             logger.exception(e.args)
         return loan_schedule
+
+    @staticmethod
+    async def get_schedule(session: AsyncSession, loan_id: UUID, email: str) -> list[LoanPaymentRead]:
+        try:
+            cached_schedule: bytes = await cache.get(f'user:{email}.loan:{loan_id}.payments')
+            if cached_schedule:
+                raw_payments: list[dict[str, ...]] = orjson.loads(cached_schedule)
+                loan_schedule = [LoanPaymentRead(**pay) for pay in raw_payments]
+                return loan_schedule
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
+
+        payment_repo: LoanPaymentRepository = LoanPaymentRepository(session=session)
+        loan_repo: LoanRepository = LoanRepository(session=session)
+
+        loan: Loan = await loan_repo.get(email=email, id=loan_id)
+        if not loan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The loan with supplied ID doesn't exist"
+            )
+
+        loan_payments: Sequence[LoanPayment] = await payment_repo.get_many(email=email, loan_id=loan_id)
+        if not loan_payments:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The schedule for the loan with supplied ID does not exist"
+            )
+
+        loan_schedule: list[LoanPaymentRead] = []
+        raw_schedule: list[dict[str, ...]] = []
+        for payment in loan_payments:
+            payment_read: LoanPaymentRead = LoanPaymentRead(**payment.__dict__)
+            loan_schedule.append(payment_read)
+            raw_schedule.append(payment_read.model_dump())
+
+        json_schedule: bytes = orjson.dumps(raw_schedule, default=orjson_default)
+        try:
+            await cache.set(f'user:{email}.loan:{loan_id}.payments', json_schedule, ex=settings.cache.ttl)
+        except redis.exceptions.ConnectionError as e:
+            logger.exception(e.args)
+        return loan_schedule

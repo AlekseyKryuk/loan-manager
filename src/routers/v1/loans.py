@@ -95,3 +95,20 @@ async def create_schedule(
         payments=payments,
     )
     return loan_schedule[offset:offset+limit]
+
+
+@router.get("/{loan_id}/payments", response_model=list[LoanPaymentRead])
+async def get_schedule(
+        loan_id: Annotated[UUID, Path()],
+        email: Annotated[str, Depends(authenticate)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+        limit: Annotated[int, Query] = settings.pagination.limit,
+        offset: Annotated[int, Query] = settings.pagination.offset,
+) -> list[LoanPaymentRead]:
+    payment_service: LoanPaymentService = LoanPaymentService()
+    loan_schedule: list[LoanPaymentRead] = await payment_service.get_schedule(
+        session=session,
+        loan_id=loan_id,
+        email=email,
+    )
+    return loan_schedule[offset:offset+limit]
