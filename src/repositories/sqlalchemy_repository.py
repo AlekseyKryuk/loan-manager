@@ -48,6 +48,16 @@ class SqlAlchemyRepository[Model: Base](AbstractRepository):
         entity: sqlalchemy.ScalarResult = await self.session.scalars(stmt)
         return entity.one_or_none()
 
+    async def delete_many(self, **kwargs) -> Sequence[Model]:
+        stmt = (
+            sqlalchemy
+            .delete(self.model)
+            .filter_by(**kwargs)
+            .returning(self.model)
+        )
+        entity: sqlalchemy.ScalarResult = await self.session.scalars(stmt)
+        return entity.all()
+
     async def create_many(
             self,
             entities: Sequence[Model]
